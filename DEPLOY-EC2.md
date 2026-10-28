@@ -58,10 +58,10 @@ luxe-cicd/
 │   └── docker-publish.yml       # Phương án B: Docker Hub (chạy tay)
 ├── backend/                     # API Express + mysql2 (src/routes: products, categories, auth, orders, admin)
 ├── frontend/                    # React 18 + Vite + Tailwind v4, Nginx (mục 7, 8)
-│   └── public/images/products/  # 157 ảnh sản phẩm (webp, đặt tên theo slug)
+│   └── public/images/products/  # 279 ảnh sản phẩm (webp, đặt tên theo slug)
 ├── database/
 │   ├── init/01-schema.sql       # tạo bảng (users, categories, products, reviews, orders, order_items)
-│   ├── init/02-seed.sql         # FILE TỰ SINH: 8 danh mục, 45 sản phẩm, ~200 đánh giá, 2 tài khoản
+│   ├── init/02-seed.sql         # FILE TỰ SINH: 15 danh mục, 100 sản phẩm, 431 đánh giá, 2 tài khoản
 │   └── seed/                    # catalog.js (dữ liệu gốc) + generate.js (sinh 02-seed.sql)
 ├── scripts/
 │   ├── fix-pem-permission.ps1   # Windows: sửa quyền .pem + SSH (mục 3)
@@ -377,7 +377,7 @@ docker compose logs frontend
 `database/init/` (đã mount vào `/docker-entrypoint-initdb.d`):
 
 - `01-schema.sql` — tạo bảng `users`, `categories`, `products`, `reviews`, `orders`, `order_items` (utf8mb4).
-- `02-seed.sql` — 8 danh mục, 45 sản phẩm, ~200 đánh giá, 2 tài khoản demo (UPSERT, chạy lại không trùng).
+- `02-seed.sql` — 15 danh mục, 100 sản phẩm, 431 đánh giá, 2 tài khoản demo (UPSERT, chạy lại không trùng).
 
 > ⚠️ Nếu EC2 đã từng chạy bản cũ (schema cũ thiếu cột `images`, `rating`..., bảng `reviews`),
 > phải khởi tạo lại DB một lần: `bash scripts/seed-db.sh --reset` (xoá dữ liệu cũ).
