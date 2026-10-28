@@ -59,8 +59,30 @@ jobs:
     concurrency:
       group: deploy-ec2
       cancel-in-progress: false
+    # id-token: write để đăng nhập AWS bằng OIDC (không lưu access key trong GitHub)
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      AWS_REGION: ap-southeast-1
+      SG_ID: ${{ vars.AWS_SG_ID }}
 
     steps:
+      # Cổng 22 của EC2 bình thường chỉ mở cho IP quản trị. Chỉ mở cho IP runner này trong lúc deploy.
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ap-southeast-1
+
+      - name: Open SSH for this runner
+        run: |
+          IP=$(curl -fsS https://checkip.amazonaws.com)
+          echo "RUNNER_IP=$IP" >> "$GITHUB_ENV"
+          aws ec2 authorize-security-group-ingress --group-id "$SG_ID" \
+            --ip-permissions "IpProtocol=tcp,FromPort=22,ToPort=22,IpRanges=[{CidrIp=$IP/32,Description=github-actions-deploy}]" \
+            || echo "Rule đã tồn tại"
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -76,3 +98,9 @@ jobs:
             docker compose up -d frontend
             docker image prune -f
             docker compose ps
+
+      - name: Close SSH for this runner
+        if: always() && env.RUNNER_IP != ''
+        run: |
+          aws ec2 revoke-security-group-ingress --group-id "$SG_ID" \
+            --ip-permissions "IpProtocol=tcp,FromPort=22,ToPort=22,IpRanges=[{CidrIp=$RUNNER_IP/32}]"

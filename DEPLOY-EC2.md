@@ -541,6 +541,20 @@ GitHub repo → **Settings → Secrets and variables → Actions → New reposit
 
 Chỉ khi dùng **Phương án B** (Docker Hub) mới cần thêm: `DOCKER_USERNAME`, `DOCKER_PASSWORD` (Access token).
 
+### Cổng SSH 22 không mở cho cả Internet
+
+Security Group chỉ cho SSH từ IP quản trị. Khi deploy, workflow đăng nhập AWS bằng **OIDC**
+(không lưu access key), mở cổng 22 cho đúng IP của runner rồi **luôn đóng lại** sau khi xong.
+Cần thêm 2 **Variables** (Settings → Secrets and variables → Actions → tab *Variables*):
+
+| Variable | Giá trị |
+| --- | --- |
+| `AWS_ROLE_ARN` | ARN IAM role `luxe-github-deploy` — trust OIDC `token.actions.githubusercontent.com`, chỉ cho `repo:<user>/luxe-cicd:ref:refs/heads/main` |
+| `AWS_SG_ID` | ID Security Group của EC2 (vd `sg-0abc...`) |
+
+Quyền của role chỉ gồm `ec2:AuthorizeSecurityGroupIngress` và `ec2:RevokeSecurityGroupIngress`
+trên đúng Security Group đó.
+
 ## 13.3. Cấp quyền Docker cho user `ubuntu`
 
 Đã làm trong `install-docker.sh` (`sudo usermod -aG docker ubuntu`). Kiểm tra lại sau khi SSH lại:
