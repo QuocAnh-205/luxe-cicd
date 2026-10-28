@@ -71,6 +71,15 @@ services:
       DB_PASSWORD: ${MYSQL_PASSWORD}
       DB_NAME: ${MYSQL_DATABASE:-luxe_fashion}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      # Gửi email OTP quên mật khẩu: ses | smtp | (trống = chỉ ghi log)
+      MAIL_PROVIDER: ${MAIL_PROVIDER:-}
+      MAIL_FROM: ${MAIL_FROM:-LUXE <no-reply@luxe.vn>}
+      AWS_REGION: ${AWS_REGION:-ap-southeast-1}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      OTP_DEBUG: ${OTP_DEBUG:-false}
     # Chỉ bind 127.0.0.1: trên EC2 vẫn test được bằng `curl http://localhost:5000/api/...`
     # nhưng Internet không truy cập trực tiếp được — mọi request đi qua Nginx /api/
     ports:
