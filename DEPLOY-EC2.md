@@ -549,7 +549,7 @@ Cần thêm 2 **Variables** (Settings → Secrets and variables → Actions → 
 
 | Variable | Giá trị |
 | --- | --- |
-| `AWS_ROLE_ARN` | ARN IAM role `luxe-github-deploy` — trust OIDC `token.actions.githubusercontent.com`, chỉ cho `repo:<user>/luxe-cicd:ref:refs/heads/main` |
+| `AWS_ROLE_ARN` | ARN IAM role `luxe-github-deploy` — trust OIDC `token.actions.githubusercontent.com`, chỉ cho `sub` của repo + nhánh main. Repo mới dùng dạng immutable: `repo:<user>@<user_id>/luxe-cicd@<repo_id>:ref:refs/heads/main` (xem bằng `gh api repos/<user>/luxe-cicd/actions/oidc/customization/sub`) |
 | `AWS_SG_ID` | ID Security Group của EC2 (vd `sg-0abc...`) |
 
 Quyền của role chỉ gồm `ec2:AuthorizeSecurityGroupIngress` và `ec2:RevokeSecurityGroupIngress`
