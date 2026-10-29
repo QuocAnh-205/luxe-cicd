@@ -127,6 +127,10 @@ jobs:
             git pull --ff-only origin main
             docker compose build backend
             docker compose up -d mysql backend
+            # Khách hàng + đơn hàng mẫu cho trang Admin (chạy lại an toàn: không nhân đôi, không đụng sản phẩm/mật khẩu)
+            set -a; . ./.env; set +a
+            docker exec -i -e MYSQL_PWD="$MYSQL_ROOT_PASSWORD" luxe-mysql \
+              mysql -uroot --default-character-set=utf8mb4 "${MYSQL_DATABASE:-luxe_fashion}" < database/init/03-demo-orders.sql
             docker image prune -f
             docker compose ps
 
