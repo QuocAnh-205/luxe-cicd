@@ -1,13 +1,10 @@
 name: Backend CI/CD Pipeline
 
 on:
+  # CI chạy với MỌI PR (không lọc paths) vì CI là "required check" để được merge:
+  # nếu lọc paths, PR không đụng thư mục này sẽ treo mãi ở trạng thái "Expected".
   pull_request:
     branches: ["main"]
-    paths:
-      - "backend/**"
-      - "database/**"
-      - "docker-compose.yml"
-      - ".github/workflows/backend-ci-cd.yml"
   push:
     branches: ["main"]
     paths:
