@@ -415,6 +415,25 @@ docker exec -e MYSQL_PWD="$MYSQL_ROOT_PASSWORD" luxe-mysql mysqldump -uroot "$MY
 
 ---
 
+## 10.2. Sao lưu & khôi phục database
+
+**Tự động:** workflow [`.github/workflows/db-backup.yml`](.github/workflows/db-backup.yml) chạy mỗi đêm
+lúc **02:00 giờ Việt Nam**, dump MySQL thành `~/backups/luxe_YYYY-MM-DD_HHMM.sql.gz` trên EC2 và giữ **7 bản** mới nhất.
+Sao lưu ngay: tab **Actions** → **Database Backup** → **Run workflow**.
+
+Khôi phục một bản sao lưu (trên EC2):
+
+```bash
+cd ~/luxe && source .env
+ls -lh ~/backups                                   # chọn file cần khôi phục
+zcat ~/backups/luxe_2026-10-30_0200.sql.gz |   docker exec -i -e MYSQL_PWD="$MYSQL_ROOT_PASSWORD" luxe-mysql mysql -uroot "$MYSQL_DATABASE"
+```
+
+> Bản sao lưu nằm trên cùng máy EC2: xoá máy (Terminate) là mất cả bản sao lưu. Muốn an toàn hơn thì tải về máy:
+> `scp -i luxe-ec2.pem ubuntu@<EC2_IP>:~/backups/<file>.sql.gz .`
+
+---
+
 ## 11. Cho phép MySQL connect từ Workbench
 
 ### 11.1. Mở port 3306 trong Security Group
