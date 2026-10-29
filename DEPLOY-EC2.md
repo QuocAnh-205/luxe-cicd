@@ -434,6 +434,31 @@ zcat ~/backups/luxe_2026-10-30_0200.sql.gz |   docker exec -i -e MYSQL_PWD="$MYS
 
 ---
 
+## 10.3. Test tự động backend
+
+`backend/test/api.test.js` — **28 bài test API** (dùng `node:test` có sẵn của Node, không cần thư viện thêm), gọi HTTP thật
+vào app và kiểm tra dữ liệu thật trong MySQL: health, danh mục/sản phẩm (lọc, sắp xếp, phân trang, tìm kiếm),
+đăng ký/đăng nhập, đặt hàng (giá tính ở server, phí ship, trừ tồn kho), phân quyền admin, huỷ đơn trả kho,
+quên mật khẩu bằng OTP.
+
+**Trong CI:** job *CI – Build & Test Backend* dựng MySQL tạm (service container), nạp `01-schema.sql` + `02-seed.sql`
+rồi chạy `npm test`. Test lỗi ⇒ job đỏ ⇒ CD không chạy ⇒ **không deploy code lỗi**.
+
+**Chạy ở máy:**
+
+```bash
+docker run -d --name luxe-test-mysql -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=luxe_test \
+  -e MYSQL_USER=luxe_user -e MYSQL_PASSWORD=luxe_pass -p 127.0.0.1:3317:3306 mysql:8.0
+# đợi ~20 giây rồi nạp dữ liệu
+for f in database/init/01-schema.sql database/init/02-seed.sql; do
+  docker exec -i luxe-test-mysql mysql -uroot -proot --default-character-set=utf8mb4 luxe_test < $f
+done
+cd backend && DB_HOST=127.0.0.1 DB_PORT=3317 DB_USERNAME=luxe_user DB_PASSWORD=luxe_pass DB_NAME=luxe_test npm test
+docker rm -f luxe-test-mysql   # dọn xong
+```
+
+---
+
 ## 11. Cho phép MySQL connect từ Workbench
 
 ### 11.1. Mở port 3306 trong Security Group
