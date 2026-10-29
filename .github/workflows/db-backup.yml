@@ -57,7 +57,8 @@ jobs:
               "${MYSQL_DATABASE:-luxe_fashion}" | gzip > "$F"
             # Kiểm tra file nén hợp lệ và có dữ liệu bảng products
             gzip -t "$F"
-            zcat "$F" | grep -q "INSERT INTO \`products\`"
+            # grep -c đọc hết dữ liệu (grep -q dừng sớm làm zcat nhận SIGPIPE -> lỗi 141 khi có pipefail)
+            zcat "$F" | grep -c "INSERT INTO \`products\`" > /dev/null
             chmod 600 "$F"
             # Giữ 7 bản mới nhất
             ls -1t ~/backups/luxe_*.sql.gz | tail -n +8 | xargs -r rm --
