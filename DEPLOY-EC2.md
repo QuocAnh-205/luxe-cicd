@@ -409,7 +409,8 @@ Backup:
 docker exec -e MYSQL_PWD="$MYSQL_ROOT_PASSWORD" luxe-mysql mysqldump -uroot "$MYSQL_DATABASE" > backup_$(date +%F).sql
 ```
 
-> Tài khoản seed sẵn: **admin@luxe.vn / Admin@123** (vào `/admin`) và **demo@luxe.vn / Demo@123**.
+> Tài khoản seed sẵn: **admin@luxe.vn / Admin@123** (vào `/admin`; trên server production đã đổi mật khẩu khác) và **demo@luxe.vn / Demo@123**.
+> Thêm 20 khách hàng mẫu `*@example.com` (mật khẩu chung `Khach@123`) cùng ~43 đơn hàng nhiều trạng thái (`database/init/03-demo-orders.sql`) để xem trên trang Admin. Server đang chạy thì nạp bằng `bash scripts/seed-db.sh` (chạy lại an toàn, không nhân đôi đơn).
 > 🔐 Trên server public hãy đổi mật khẩu admin ngay (hoặc nâng quyền tài khoản của bạn trong trang
 > Admin → Người dùng rồi hạ quyền `admin@luxe.vn`).
 

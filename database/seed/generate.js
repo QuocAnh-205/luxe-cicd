@@ -136,3 +136,98 @@ sql.push(
 
 fs.writeFileSync(OUT, sql.join('\n'));
 console.log(`Đã ghi ${OUT}: ${products.length} sản phẩm, ${reviewRows.length} đánh giá`);
+
+// ---------- 03-demo-orders.sql: khách hàng mẫu + lịch sử đơn hàng cho trang Admin ----------
+// Chạy lại an toàn: khách UPSERT theo email; đơn của một khách chỉ được tạo khi khách đó chưa có đơn nào.
+// Đơn mẫu là "lịch sử", không trừ tồn kho (số đã bán đã có sẵn trong 02-seed.sql).
+const OUT_ORDERS = path.join(__dirname, '../init/03-demo-orders.sql');
+const CUSTOMER_PASSWORD = 'Khach@123';
+const SHIPPING_FEE = 30000;
+const FREE_SHIPPING_FROM = 1000000;
+const customers = [
+  ['Nguyễn Minh Anh', 'minhanh.nguyen', '0905123401', '18 Bạch Đằng, Hải Châu, Đà Nẵng'],
+  ['Trần Thu Hà', 'thuha.tran', '0912345602', '72 Trần Phú, Hải Châu, Đà Nẵng'],
+  ['Lê Quốc Bảo', 'quocbao.le', '0935678903', '9 Nguyễn Văn Linh, Thanh Khê, Đà Nẵng'],
+  ['Phạm Ngọc Lan', 'ngoclan.pham', '0987654304', '120 Lê Lợi, Quận 1, TP.HCM'],
+  ['Hoàng Gia Huy', 'giahuy.hoang', '0903456705', '25 Hai Bà Trưng, Hoàn Kiếm, Hà Nội'],
+  ['Võ Thanh Trúc', 'thanhtruc.vo', '0978123406', '56 Võ Văn Tần, Quận 3, TP.HCM'],
+  ['Đặng Khánh Linh', 'khanhlinh.dang', '0934567807', '14 Hùng Vương, Huế'],
+  ['Bùi Đức Thịnh', 'ducthinh.bui', '0965432108', '88 Nguyễn Trãi, Thanh Xuân, Hà Nội'],
+  ['Đỗ Mai Phương', 'maiphuong.do', '0919876509', '3 Phan Chu Trinh, Hội An, Quảng Nam'],
+  ['Huỳnh Tấn Phát', 'tanphat.huynh', '0941234510', '47 Ngô Quyền, Sơn Trà, Đà Nẵng'],
+  ['Ngô Bảo Châu', 'baochau.ngo', '0908765411', '201 Điện Biên Phủ, Bình Thạnh, TP.HCM'],
+  ['Dương Thảo Vy', 'thaovy.duong', '0932109812', '66 Lê Đình Lý, Thanh Khê, Đà Nẵng'],
+  ['Lý Hoàng Nam', 'hoangnam.ly', '0977654313', '31 Trần Hưng Đạo, Ninh Kiều, Cần Thơ'],
+  ['Phan Yến Nhi', 'yennhi.phan', '0916543214', '5 Nguyễn Thị Minh Khai, Nha Trang, Khánh Hoà'],
+  ['Vũ Hải Đăng', 'haidang.vu', '0989012315', '150 Cầu Giấy, Cầu Giấy, Hà Nội'],
+  ['Trịnh Kim Ngân', 'kimngan.trinh', '0923456716', '22 Lý Thường Kiệt, Hải Châu, Đà Nẵng'],
+  ['Mai Xuân Trường', 'xuantruong.mai', '0938765417', '77 Pasteur, Quận 1, TP.HCM'],
+  ['Cao Thị Hồng Nhung', 'hongnhung.cao', '0967890118', '40 Lạch Tray, Ngô Quyền, Hải Phòng'],
+  ['Tạ Minh Khoa', 'minhkhoa.ta', '0904321019', '12 Tôn Đức Thắng, Liên Chiểu, Đà Nẵng'],
+  ['Lâm Ngọc Hân', 'ngochan.lam', '0945678920', '98 Nguyễn Huệ, Quy Nhơn, Bình Định'],
+];
+const notes = [null, null, null, 'Giao giờ hành chính giúp mình', 'Gọi trước khi giao', 'Gói quà giúp mình nhé', 'Giao buổi tối sau 18h'];
+// Đơn càng cũ càng nhiều khả năng đã hoàn thành
+const statusFor = (daysAgo) => {
+  const x = rand();
+  if (daysAgo <= 2) return x < 0.6 ? 'pending' : x < 0.85 ? 'paid' : 'shipping';
+  if (daysAgo <= 7) return x < 0.2 ? 'pending' : x < 0.45 ? 'paid' : x < 0.8 ? 'shipping' : x < 0.93 ? 'completed' : 'cancelled';
+  return x < 0.85 ? 'completed' : 'cancelled';
+};
+
+const ord = [];
+ord.push(`-- 03-demo-orders.sql — FILE TỰ SINH bởi database/seed/generate.js, đừng sửa tay.
+-- ${customers.length} khách hàng mẫu (mật khẩu chung: ${CUSTOMER_PASSWORD}) và lịch sử đơn hàng để xem trên trang Admin.
+-- Chạy lại nhiều lần an toàn: khách UPSERT theo email, đơn chỉ tạo cho khách chưa có đơn nào.
+SET NAMES utf8mb4;
+`);
+const customerHash = bcrypt.hashSync(CUSTOMER_PASSWORD, 10);
+ord.push('INSERT INTO users (full_name, email, password_hash, phone, address, role, created_at) VALUES');
+ord.push(
+  customers
+    .map(([name, handle, phone, addr], i) =>
+      `  (${[name, `${handle}@example.com`, customerHash, phone, addr, 'customer'].map(esc).join(', ')}, ` +
+        `NOW() - INTERVAL ${180 - i * 3} DAY)`)
+    .join(',\n') + '\nON DUPLICATE KEY UPDATE full_name = VALUES(full_name);\n'
+);
+
+let orderCount = 0;
+customers.forEach(([name, handle, phone, addr], ci) => {
+  const email = `${handle}@example.com`;
+  ord.push(`-- ${name}`);
+  ord.push(`SET @uid = (SELECT id FROM users WHERE email = ${esc(email)});`);
+  ord.push('SET @fresh = NOT EXISTS (SELECT 1 FROM orders WHERE user_id = @uid);');
+  const n = 1 + Math.floor(rand() * 4);
+  for (let k = 0; k < n; k++) {
+    const daysAgo = Math.floor(Math.pow(rand(), 2) * 90); // nghiêng về đơn gần đây
+    const lines = [];
+    const itemCount = 1 + Math.floor(rand() * 3);
+    for (let j = 0; j < itemCount; j++) {
+      const pi = Math.floor(rand() * products.length);
+      if (lines.some((l) => l.pi === pi)) continue;
+      const p = products[pi];
+      const size = p.sizes ? pick(p.sizes.split(',')) : null;
+      lines.push({ pi, qty: rand() < 0.8 ? 1 : 2, size, price: p.price });
+    }
+    const subtotal = lines.reduce((s, l) => s + l.price * l.qty, 0);
+    const shipping = subtotal >= FREE_SHIPPING_FROM ? 0 : SHIPPING_FEE;
+    const created = `NOW() - INTERVAL ${daysAgo} DAY - INTERVAL ${Math.floor(rand() * 24)} HOUR`;
+    ord.push(
+      'INSERT INTO orders (user_id, full_name, phone, total_amount, shipping_fee, status, payment_method, shipping_address, note, created_at, updated_at)\n' +
+        `  SELECT @uid, ${[name, phone, subtotal + shipping, shipping, statusFor(daysAgo), rand() < 0.65 ? 'cod' : 'bank', addr, pick(notes)]
+          .map(esc).join(', ')}, ${created}, ${created} FROM DUAL WHERE @fresh;`
+    );
+    ord.push('SET @oid = IF(ROW_COUNT() > 0, LAST_INSERT_ID(), NULL);');
+    ord.push(
+      'INSERT INTO order_items (order_id, product_id, quantity, size, unit_price)\n' +
+        lines
+          .map((l) => `  SELECT @oid, ${[l.pi + 1, l.qty, l.size, l.price].map(esc).join(', ')} FROM DUAL WHERE @oid IS NOT NULL`)
+          .join('\n  UNION ALL\n') +
+        ';'
+    );
+    orderCount++;
+  }
+  ord.push('');
+});
+fs.writeFileSync(OUT_ORDERS, ord.join('\n'));
+console.log(`Đã ghi ${OUT_ORDERS}: ${customers.length} khách hàng, ${orderCount} đơn hàng`);

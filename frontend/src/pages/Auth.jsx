@@ -25,7 +25,7 @@ function SubmitButton({ loading, children, ...props }) {
   );
 }
 
-// Đăng nhập/đăng ký xong thì lưu token, chào và quay lại trang trước đó (?next=)
+// Đăng nhập/đăng ký xong thì lưu token, chào và quay lại trang trước đó (?next=); admin vào thẳng trang quản trị
 function useAuthSuccess() {
   const { login, toast } = useStore();
   const navigate = useNavigate();
@@ -36,7 +36,7 @@ function useAuthSuccess() {
     done: ({ token, user }, message) => {
       login(token, user);
       toast(message(user));
-      navigate(next || '/');
+      navigate(next || (user.role === 'admin' ? '/admin' : '/'));
     },
   };
 }
