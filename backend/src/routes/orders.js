@@ -2,7 +2,7 @@ const router = require('express').Router();
 const pool = require('../db');
 const { requireAuth } = require('../auth');
 
-const SHIPPING_FEE = 30000;
+const SHIPPING_FEE = 25000;
 const FREE_SHIPPING_FROM = 1000000;
 
 const badRequest = (message, status = 400) => Object.assign(new Error(message), { status, expose: true });
